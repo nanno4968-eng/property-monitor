@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ report_title }}</title>
+<style>
+  @page { size: A4; margin: 18mm 14mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10.5pt; color: #1b1b1b; }
+  h1 { font-size: 18pt; margin-bottom: 2px; }
+  .subtitle { color: #555; font-size: 9.5pt; margin-bottom: 18px; }
+  .disclaimer { background: #f3f3f3; border-left: 4px solid #999; padding: 10px 14px; font-size: 8.5pt; margin-bottom: 20px; }
+  .run-summary { margin-bottom: 20px; font-size: 9.5pt; color: #333; }
+  .opportunity { border: 1px solid #ddd; border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; page-break-inside: avoid; }
+  .opportunity h2 { font-size: 13pt; margin: 0 0 4px 0; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8pt; font-weight: bold; margin-right: 6px; }
+  .badge-new { background: #e6f4ea; color: #1e7e34; }
+  .badge-updated { background: #e8f0fe; color: #1a56db; }
+  .scores { margin: 8px 0; font-size: 9.5pt; }
+  .scores span { display: inline-block; margin-right: 16px; }
+  .score-num { font-weight: bold; }
+  table.fields { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9pt; }
+  table.fields td { padding: 3px 6px; vertical-align: top; border-bottom: 1px solid #eee; }
+  table.fields td.label { color: #666; width: 34%; }
+  .risk-flags { margin-top: 8px; }
+  .risk-flag { font-size: 8.5pt; padding: 2px 0; }
+  .sev-critical { color: #b00020; font-weight: bold; }
+  .sev-high { color: #c1440e; font-weight: bold; }
+  .sev-medium { color: #8a6d00; }
+  .sev-low { color: #555; }
+  .source-link { font-size: 8.5pt; color: #555; }
+  .footer-disclaimer { font-size: 8pt; color: #777; margin-top: 24px; border-top: 1px solid #ddd; padding-top: 10px; }
+</style>
+</head>
+<body>
+  <h1>{{ report_title }}</h1>
+  <div class="subtitle">Generated {{ generated_at }} (Africa/Johannesburg) &middot; {{ opportunities|length }} opportunity record(s) in this run</div>
+
+  <div class="disclaimer">
+    This platform identifies publicly advertised property opportunities and assists with preliminary
+    research. It does not provide legal, financial, conveyancing, valuation, auction, or investment
+    advice. Listings may be incomplete, postponed, cancelled, outdated, occupied, or subject to
+    conditions not captured here. Independently verify ownership, title, authority to sell, auction
+    status, property condition, occupation, municipal accounts, levies, taxes, costs, and legal
+    requirements before making any decision or payment.
+  </div>
+
+  <div class="run-summary">
+    <strong>This run:</strong>
+    {{ run_summary.documents_processed }} document(s) processed &middot;
+    {{ run_summary.new_opportunities }} new &middot;
+    {{ run_summary.updated_opportunities }} updated &middot;
+    {{ run_summary.needs_review }} flagged for manual review &middot;
+    {{ run_summary.duplicates_merged }} duplicate(s) merged
+  </div>
+
+  {% for item in opportunities %}
+  <div class="opportunity">
+    <h2>{{ item.title }}</h2>
+    <div>
+      {% if item.is_new %}<span class="badge badge-new">NEW</span>{% else %}<span class="badge badge-updated">UPDATED</span>{% endif %}
+      <span class="badge" style="background:#eee;color:#333;">{{ item.status|upper }}</span>
+      <span class="badge" style="background:#eee;color:#333;">{{ item.opportunity_type|replace('_',' ')|upper }}</span>
+    </div>
+
+    <div class="scores">
+      <span>Opportunity score: <span class="score-num">{{ item.opportunity_score }}</span>/100</span>
+      <span>Risk score: <span class="score-num">{{ item.risk_score }}</span>/100</span>
+      <span>Completeness: <span class="score-num">{{ item.completeness_score }}</span>/100</span>
+    </div>
+
+    <table class="fields">
+      <tr><td class="label">Address</td><td>{{ item.address or "Not extracted" }}</td></tr>
+      <tr><td class="label">Erf / deeds description</td><td>{{ item.erf_description or "Not extracted" }}</td></tr>
+      <tr><td class="label">Municipality / Province</td><td>{{ item.municipality or "?" }}, {{ item.province or "?" }}</td></tr>
+      <tr><td class="label">Auction date</td><td>{{ item.auction_date or "Not extracted" }} {{ item.auction_time or "" }}</td></tr>
+      <tr><td class="label">Auction venue</td><td>{{ item.auction_venue or "Not extracted" }}</td></tr>
+      <tr><td class="label">Reserve price</td><td>{{ item.reserve_price or "Not stated" }}</td></tr>
+      <tr><td class="label">Case number</td><td>{{ item.case_number or "Not extracted" }}</td></tr>
+      <tr><td class="label">Contact</td><td>{{ item.contact or "Not extracted" }}</td></tr>
+      <tr><td class="label">Extraction confidence</td><td>{{ item.extraction_confidence }}</td></tr>
+    </table>
+
+    {% if item.risk_flags %}
+    <div class="risk-flags">
+      <strong>Risk flags:</strong>
+      {% for flag in item.risk_flags %}
+      <div class="risk-flag"><span class="sev-{{ flag.severity }}">[{{ flag.severity|upper }}]</span> {{ flag.title }} &mdash; {{ flag.description }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="source-link">Source document(s): {{ item.source_titles }}</div>
+  </div>
+  {% endfor %}
+
+  <div class="footer-disclaimer">
+    Report generated by an automated screening pipeline. No lead in this report is verified. A human
+    must complete legal and Deeds Office verification before any lead is treated as actionable.
+  </div>
+</body>
+</html>
