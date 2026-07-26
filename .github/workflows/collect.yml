@@ -1,0 +1,54 @@
+name: Property monitor - collect and report
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "data/inbox/**"
+
+permissions:
+  contents: write
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies for PDF rendering
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+      - name: Install Python dependencies
+        run: pip install -e .
+
+      - name: Run the pipeline
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          GEOCODING_ENABLED: ${{ vars.GEOCODING_ENABLED || 'false' }}
+          ALWAYS_SEND_DIGEST: ${{ vars.ALWAYS_SEND_DIGEST || 'false' }}
+        run: python -m app.cli run
+
+      - name: Commit updated data back to the repo
+        run: |
+          git config user.name "property-monitor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/property_monitor.db data/raw_documents data/inbox
+          git diff --cached --quiet || git commit -m "chore: pipeline run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
