@@ -41,5 +41,10 @@ class Settings(BaseSettings):
 
     scoring_version: str = "2026.1"
 
+    # Comma-separated town/area names for the (non-scraping) weekly watch
+    # reminder - see app/services/area_watch.py for why this doesn't fetch
+    # anything automatically.
+    watch_areas: str = "Potchefstroom,Fochville,Vereeniging"
+
 
 settings = Settings()
