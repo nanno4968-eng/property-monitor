@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Keep the SQLite DB and archived documents under version control on purpose -
+# they ARE the audit trail for this zero-server design. Only ignore scratch files.
+data/inbox/*
+!data/inbox/.gitkeep
+data/reports/*.pdf
+!data/reports/.gitkeep
