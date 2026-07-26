@@ -64,21 +64,45 @@ BANK_PROGRAM_PAGES = [
 
 _MR_HREF_RE = re.compile(r"^/MR(\d+)-")
 
+# Verified by the operator directly (26 July 2026) - see docs/source_policy.md.
+# Used ONLY as a fallback if the live robots.txt fetch below fails for some
+# reason (e.g. a transient network issue) - the live fetch is always tried
+# first, and this constant should be re-verified occasionally rather than
+# trusted forever.
+_VERIFIED_ROBOTS_TXT_FALLBACK = [
+    "User-Agent: *",
+    "Disallow: /templates/",
+]
+
 _robots_parser: urllib.robotparser.RobotFileParser | None = None
 
 
 def _get_robots_parser() -> urllib.robotparser.RobotFileParser:
+    """RobotFileParser.read() fetches robots.txt itself using Python's
+    generic default User-Agent ("Python-urllib/x.y"), which some sites'
+    bot-protection blocks outright - and when that fetch fails, the parser
+    fails *closed* (blocks everything), not open. So: fetch it ourselves
+    with our real, contactable User-Agent (matching every other request this
+    collector makes), and only fall back to the manually-verified copy above
+    if that still fails for some other reason."""
     global _robots_parser
     if _robots_parser is None:
         _robots_parser = urllib.robotparser.RobotFileParser()
-        _robots_parser.set_url(f"{BASE_URL}/robots.txt")
         try:
-            _robots_parser.read()
-        except Exception:
-            pass  # fail closed via can_fetch's default (True) only if read succeeded;
-            # if it didn't, we still try can_fetch, which returns True when no
-            # rules were loaded - acceptable here since a human already
-            # verified robots.txt manually (see docs/source_policy.md).
+            import requests
+
+            resp = requests.get(
+                f"{BASE_URL}/robots.txt", headers={"User-Agent": USER_AGENT}, timeout=10
+            )
+            resp.raise_for_status()
+            _robots_parser.parse(resp.text.splitlines())
+        except Exception as exc:
+            print(
+                f"[myroof] Could not fetch robots.txt live ({exc}); falling back to the "
+                f"copy verified by the operator on 2026-07-26. If MyRoof's policy has "
+                f"changed since then, this fallback may be stale - worth re-checking by hand."
+            )
+            _robots_parser.parse(_VERIFIED_ROBOTS_TXT_FALLBACK)
     return _robots_parser
 
 
