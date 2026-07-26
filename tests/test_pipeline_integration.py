@@ -33,6 +33,13 @@ def test_pipeline_creates_opportunity_from_sample_notice(clean_db, clean_inbox):
         assert 0 <= score.risk_score <= 100
         assert 0 <= score.completeness_score <= 100
 
+        # Regression test: risk_score must actually reflect the flags that
+        # were created, not silently come out as 0 (autoflush-ordering bug).
+        severity_weights = {"critical": 25, "high": 15, "medium": 8, "low": 3}
+        expected_risk_score = min(100.0, sum(severity_weights[f.severity] for f in risk_flags))
+        assert score.risk_score == expected_risk_score
+        assert score.risk_score > 0  # this specific fixture always has >=2 flags
+
         checklist = session.execute(
             select(DueDiligenceItem).where(DueDiligenceItem.opportunity_id == opp.id)
         ).scalars().all()

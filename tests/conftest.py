@@ -19,6 +19,16 @@ os.environ.setdefault("ALWAYS_SEND_DIGEST", "false")
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _no_live_network_calls(monkeypatch):
+    """The MyRoof collector makes real HTTP requests in production. Tests
+    must stay fast, deterministic, and offline - so every test gets an
+    empty-list stand-in unless a specific test overrides this itself.
+    Dedicated parser/collector-logic tests exercise the real parsing code
+    against fixture HTML/text instead of hitting the network."""
+    monkeypatch.setattr("app.pipeline.collect_myroof_listings", lambda: [])
+
+
 @pytest.fixture()
 def clean_db():
     """Fresh tables for a single test."""

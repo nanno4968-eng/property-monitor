@@ -22,6 +22,8 @@ dependencies = [
     "rapidfuzz>=3.6",
     "geopy>=2.4",
     "tenacity>=8.2",
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
 ]
 
 [project.optional-dependencies]

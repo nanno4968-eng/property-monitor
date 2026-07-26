@@ -91,16 +91,35 @@ pipeline integration test (including a duplicate-merge scenario).
 
 ## What's implemented vs deferred
 
-**Implemented:** manual-upload collector, sheriff-sale notice parsing,
-erf/portion/farm/sectional-title parsing, normalisation, deduplication,
-risk-flag engine, three-part scoring, default due-diligence checklist, PDF
-report generation, email delivery, full audit trail, automated tests.
+**Implemented:** manual-upload collector, a live collector for
+MyRoof.co.za's bank-repossession listings (Standard Bank/FNB/Nedbank/SA Home
+Loans, filtered to your configured `WATCH_AREAS`), sheriff-sale notice
+parsing, erf/portion/farm/sectional-title parsing, normalisation,
+deduplication, risk-flag engine, three-part scoring, default due-diligence
+checklist, PDF report generation, email delivery, a weekly area-check
+reminder for sources that can't be automated, full audit trail, automated
+tests.
 
 **Deliberately deferred** (see `docs/architecture.md` for why, and how to
-add them later): live web/RSS collectors for specific sources (each needs an
-individual robots.txt/terms review first - see `docs/source_policy.md`),
-a web dashboard and map, user accounts/auth, financial/valuation modelling,
-OCR for scanned notices, Alembic migrations, Celery/Redis.
+add them later): live collectors for sheriff-sale-notice sources - SA
+Sheriff and News24/Netwerk24 public notices were both researched and found
+to explicitly restrict automated copying (see `docs/source_policy.md`), so
+those stay manual/reminder-based unless that changes. Also deferred: a web
+dashboard and map, user accounts/auth, financial/valuation modelling, OCR
+for scanned notices, Alembic migrations, Celery/Redis.
+
+## The MyRoof live collector
+
+`app/collectors/sources/myroof.py` checks MyRoof.co.za's own bank-listing
+pages (Standard Bank EasySell/Pre-Hammer/Repossessed, FNB Quick
+Sell/Repossessed, Nedbank Repossessed, SA Home Loans Sell Assist/Repossessed)
+for anything matching your `WATCH_AREAS` towns, and feeds matches straight
+into the same scoring/report/email pipeline as manually-uploaded notices.
+This was the one source out of several researched that clearly permits
+automated access - see `docs/source_policy.md` for the full compliance
+review, including the actual `robots.txt` it was checked against. It runs
+automatically as part of the same daily `python -m app.cli run` - no
+separate setup needed.
 
 ## Repository layout
 

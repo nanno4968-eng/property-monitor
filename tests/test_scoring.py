@@ -32,6 +32,20 @@ def test_full_extraction_confidence_maxes_source_reliability_component():
     assert breakdown["components"]["source_reliability"] == 10.0
 
 
+def test_out_of_range_extraction_confidence_is_clamped():
+    # Regression test: a caller-side bug once let extraction_confidence
+    # exceed 1.0 (e.g. 1.17), which silently pushed this component past its
+    # stated 10-point max. The scoring function must defend against that.
+    score, breakdown = scoring.calculate_opportunity(
+        has_market_valuation=False, market_discount_pct=None,
+        geocode_confidence="high", province_is_target=True,
+        extraction_confidence=1.17, erf_or_sectional_present=True,
+        improvements_present=True, conditions_complete=True,
+        auction_date=None,
+    )
+    assert breakdown["components"]["source_reliability"] == 10.0
+
+
 def test_opportunity_score_never_exceeds_100_components_sum():
     score, breakdown = scoring.calculate_opportunity(
         has_market_valuation=True, market_discount_pct=100.0,

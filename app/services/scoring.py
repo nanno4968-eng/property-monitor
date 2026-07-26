@@ -93,7 +93,7 @@ def calculate_opportunity(
     components["rental_potential"] = 0.0
 
     # 10 pts: source reliability, scaled from parser extraction confidence.
-    components["source_reliability"] = round(extraction_confidence * 10, 1)
+    components["source_reliability"] = round(min(1.0, max(0.0, extraction_confidence)) * 10, 1)
 
     # 10 pts: property description clarity.
     components["property_description_clarity"] = (
